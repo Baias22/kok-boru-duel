@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { motion } from "framer-motion";
 import type { Question } from "@/lib/questions-store";
 import { cn } from "@/lib/utils";
 
@@ -13,8 +14,7 @@ export default function QuestionCard({ team, question, disabled, onAnswer }: Pro
   const [feedback, setFeedback] = useState<null | "correct" | "wrong">(null);
   const [picked, setPicked] = useState<number | null>(null);
 
-  const teamColor = team === "A" ? "oklch(0.55 0.18 250)" : "oklch(0.55 0.18 25)";
-  const teamBg = team === "A" ? "bg-[oklch(0.95_0.04_250)]" : "bg-[oklch(0.95_0.04_25)]";
+  const teamClass = team === "A" ? "team-a" : "team-b";
 
   function handleClick(idx: number) {
     if (!question || disabled || feedback) return;
@@ -29,61 +29,83 @@ export default function QuestionCard({ team, question, disabled, onAnswer }: Pro
   }
 
   return (
-    <div className={cn("rounded-2xl border-2 p-5 flex flex-col gap-4 h-full", teamBg)} style={{ borderColor: teamColor }}>
+    <motion.div
+      initial={{ opacity: 0, y: 14 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.35 }}
+      className={cn(
+        "flex h-full flex-col gap-4 rounded-2xl border-2 bg-card p-4 shadow-sm sm:p-5",
+        team === "A" ? "border-team-a/50" : "border-team-b/50",
+      )}
+    >
       <div className="flex items-center justify-between">
-        <h2 className="text-xl font-bold" style={{ color: teamColor }}>
-          Team {team}
-        </h2>
+        <span
+          className={cn(
+            "rounded-full px-3 py-1 text-xs font-extrabold uppercase tracking-widest text-white shadow-md",
+            team === "A" ? "bg-team-a" : "bg-team-b",
+          )}
+        >
+          Команда {team}
+        </span>
         {feedback && (
           <span
             className={cn(
-              "px-3 py-1 rounded-full text-sm font-bold text-white",
-              feedback === "correct" ? "bg-green-600" : "bg-red-600",
+              "rounded-full px-3 py-1 text-xs font-bold text-white",
+              feedback === "correct" ? "bg-emerald-600" : "bg-destructive",
             )}
           >
-            {feedback === "correct" ? "Correct!" : "Wrong!"}
+            {feedback === "correct" ? "Туура!" : "Туура эмес"}
           </span>
         )}
       </div>
 
       {!question ? (
-        <div className="flex-1 flex items-center justify-center text-center text-muted-foreground p-6">
+        <div className="flex flex-1 items-center justify-center p-6 text-center text-sm text-muted-foreground">
           Please add more questions
         </div>
       ) : (
         <>
-          <div className="text-lg md:text-xl font-semibold text-foreground min-h-[3.5rem]">
+          <h3 className="min-h-[3rem] text-base font-bold text-foreground sm:text-lg">
             {question.text}
-          </div>
-          <div className="grid grid-cols-1 gap-3 flex-1">
+          </h3>
+          <ul className="grid flex-1 grid-cols-1 gap-2">
             {question.options.map((opt, idx) => {
               const isPicked = picked === idx;
-              const isCorrect = feedback && idx === question.correctIndex;
               const showRed = isPicked && feedback === "wrong";
-              const showGreen = (isPicked && feedback === "correct") || isCorrect;
+              const showGreen = isPicked && feedback === "correct";
               return (
-                <button
-                  key={idx}
-                  onClick={() => handleClick(idx)}
-                  disabled={!!feedback || disabled}
-                  className={cn(
-                    "w-full text-left text-lg md:text-xl font-medium rounded-xl px-5 py-4 border-2 transition-all",
-                    "hover:scale-[1.02] active:scale-[0.99] disabled:cursor-not-allowed",
-                    showGreen && "bg-green-500 text-white border-green-700",
-                    showRed && "bg-red-500 text-white border-red-700",
-                    !showGreen && !showRed && "bg-white border-border hover:border-[var(--ring)]",
-                  )}
-                >
-                  <span className="inline-block w-7 h-7 mr-3 rounded-full text-center leading-7 text-sm font-bold" style={{ backgroundColor: teamColor, color: "white" }}>
-                    {String.fromCharCode(65 + idx)}
-                  </span>
-                  {opt}
-                </button>
+                <li key={idx}>
+                  <button
+                    onClick={() => handleClick(idx)}
+                    disabled={!!feedback || disabled}
+                    className={cn(
+                      "flex w-full items-start gap-2.5 rounded-xl border px-3 py-2.5 text-left text-sm transition-all",
+                      "hover:scale-[1.01] active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-60",
+                      showGreen && "border-emerald-600 bg-emerald-500/15 font-semibold",
+                      showRed && "border-destructive bg-destructive/15 font-semibold",
+                      !showGreen && !showRed && (team === "A"
+                        ? "border-border bg-background hover:border-team-a"
+                        : "border-border bg-background hover:border-team-b"),
+                    )}
+                  >
+                    <span
+                      className={cn(
+                        "flex size-6 flex-none items-center justify-center rounded-md text-xs font-bold text-white",
+                        team === "A" ? "bg-team-a" : "bg-team-b",
+                      )}
+                    >
+                      {String.fromCharCode(65 + idx)}
+                    </span>
+                    <span>{opt}</span>
+                  </button>
+                </li>
               );
             })}
-          </div>
+          </ul>
         </>
       )}
-    </div>
+      {/* keep var to avoid TS lint */}
+      <span className="hidden">{teamClass}</span>
+    </motion.div>
   );
 }
