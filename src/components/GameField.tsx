@@ -1,89 +1,169 @@
-type Props = { position: number }; // -5..5
+import { useMemo } from "react";
+import { motion } from "framer-motion";
+import riderAImg from "@/assets/rider-a.png";
+import riderBImg from "@/assets/rider-b.png";
+import carcassImg from "@/assets/carcass.png";
+import goalAImg from "@/assets/goal-a.png";
+import goalBImg from "@/assets/goal-b.png";
+import arenaBg from "@/assets/arena-bg.jpg";
 
-function Rider({ color, flip }: { color: string; flip?: boolean }) {
+type Props = {
+  position: number; // -5..5  (negative = Team A goal on left, positive = Team B goal on right)
+  flash?: "A" | "B" | null;
+  throwing?: "A" | "B" | null;
+};
+
+type SlotType = "goal-a" | "goal-b" | "rider-a" | "rider-b" | "center";
+
+export default function GameField({ position, flash = null, throwing = null }: Props) {
+  const slots = useMemo(
+    () => [
+      { pos: -5, label: "Тай Казан A", type: "goal-a" as SlotType },
+      { pos: -4, label: "A1", type: "rider-a" as SlotType },
+      { pos: -3, label: "A2", type: "rider-a" as SlotType },
+      { pos: -2, label: "A3", type: "rider-a" as SlotType },
+      { pos: -1, label: "A4", type: "rider-a" as SlotType },
+      { pos: 0, label: "Талаа", type: "center" as SlotType },
+      { pos: 1, label: "B4", type: "rider-b" as SlotType },
+      { pos: 2, label: "B3", type: "rider-b" as SlotType },
+      { pos: 3, label: "B2", type: "rider-b" as SlotType },
+      { pos: 4, label: "B1", type: "rider-b" as SlotType },
+      { pos: 5, label: "Тай Казан B", type: "goal-b" as SlotType },
+    ],
+    [],
+  );
+
   return (
-    <svg viewBox="0 0 120 90" width="120" height="90" style={{ transform: flip ? "scaleX(-1)" : undefined }}>
-      {/* horse body */}
-      <ellipse cx="60" cy="55" rx="38" ry="14" fill="#6b3a2a" />
-      {/* neck + head */}
-      <path d="M90 50 L105 30 L115 35 L100 55 Z" fill="#6b3a2a" />
-      <circle cx="110" cy="33" r="5" fill="#4a2418" />
-      {/* legs */}
-      <rect x="32" y="60" width="5" height="22" fill="#3a1f15" />
-      <rect x="48" y="60" width="5" height="22" fill="#3a1f15" />
-      <rect x="78" y="60" width="5" height="22" fill="#3a1f15" />
-      <rect x="92" y="60" width="5" height="22" fill="#3a1f15" />
-      {/* tail */}
-      <path d="M22 50 Q10 55 8 70" stroke="#3a1f15" strokeWidth="4" fill="none" />
-      {/* rider body */}
-      <rect x="50" y="22" width="20" height="26" rx="4" fill={color} />
-      {/* head */}
-      <circle cx="60" cy="18" r="8" fill="#f1c89a" />
-      {/* hat */}
-      <path d="M50 12 L70 12 L66 4 L54 4 Z" fill="#1a1a1a" />
-      {/* arm reaching forward (toward carcass) */}
-      <rect x="68" y="32" width="22" height="5" rx="2" fill={color} />
-    </svg>
+    <div
+      className="relative overflow-hidden rounded-2xl border-4 border-accent shadow-2xl sm:rounded-3xl"
+      style={{
+        backgroundImage: `url(${arenaBg})`,
+        backgroundSize: "cover",
+        backgroundPosition: "center bottom",
+      }}
+    >
+      <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-sky-200/0 via-transparent to-emerald-900/30" />
+
+      <div className="relative flex items-center justify-between gap-2 px-2 py-2 text-[10px] font-extrabold uppercase tracking-widest sm:px-5 sm:py-3 sm:text-xs">
+        <span
+          className={`truncate rounded-full bg-team-a px-2 py-1 text-team-a-foreground shadow-md transition-transform sm:px-3 ${
+            flash === "A" ? "scale-110" : ""
+          }`}
+        >
+          ← TEAM A
+        </span>
+        <span className="hidden truncate rounded-full bg-black/40 px-3 py-1 text-white backdrop-blur-sm sm:inline-block">
+          🏇 Кок Бору Арена 🐐
+        </span>
+        <span
+          className={`truncate rounded-full bg-team-b px-2 py-1 text-team-b-foreground shadow-md transition-transform sm:px-3 ${
+            flash === "B" ? "scale-110" : ""
+          }`}
+        >
+          TEAM B →
+        </span>
+      </div>
+
+      <div className="relative h-52 px-1 pb-3 sm:h-72 sm:px-4 sm:pb-4 md:h-80">
+        <div className="absolute inset-x-3 bottom-4 h-24 rounded-[40%] bg-amber-700/60 shadow-inner ring-2 ring-amber-900/40 sm:inset-x-6 sm:bottom-6 sm:h-32 md:h-40" />
+        <div className="absolute inset-x-6 bottom-7 h-1.5 rounded-full bg-amber-50/40 sm:inset-x-10 sm:bottom-10 sm:h-2" />
+
+        <div className="relative grid h-full grid-cols-11 items-end gap-0.5">
+          {slots.map((s) => (
+            <div key={s.pos} className="relative flex h-full flex-col items-center justify-end pb-1.5 sm:pb-2">
+              <Slot type={s.type} active={s.pos === position && !throwing} />
+              <div className="mt-1 hidden rounded bg-black/55 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wide text-white sm:block md:text-[10px]">
+                {s.label}
+              </div>
+
+              {s.pos === position && !throwing && (
+                <motion.div
+                  layoutId="carcass"
+                  transition={{ type: "spring", stiffness: 320, damping: 30, mass: 0.6 }}
+                  className="pointer-events-none absolute left-1/2 z-30 -translate-x-1/2"
+                  style={{ bottom: "2rem" }}
+                >
+                  <Carcass />
+                </motion.div>
+              )}
+
+              {throwing && ((throwing === "A" && s.pos === -5) || (throwing === "B" && s.pos === 5)) && (
+                <motion.div
+                  layoutId="carcass"
+                  initial={false}
+                  animate={{ y: [0, -40, 10], scale: [1, 1.2, 0.6], rotate: [0, 360, 720], opacity: [1, 1, 0] }}
+                  transition={{ duration: 1.2, ease: "easeIn", times: [0, 0.5, 1] }}
+                  className="pointer-events-none absolute left-1/2 z-30 -translate-x-1/2"
+                  style={{ bottom: "2.5rem" }}
+                >
+                  <Carcass />
+                </motion.div>
+              )}
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function Slot({ type, active }: { type: SlotType; active: boolean }) {
+  if (type === "goal-a" || type === "goal-b") {
+    return (
+      <motion.img
+        src={type === "goal-a" ? goalAImg : goalBImg}
+        alt={type === "goal-a" ? "Тай Казан A" : "Тай Казан B"}
+        loading="lazy"
+        animate={active ? { scale: [1, 1.08, 1] } : { scale: 1 }}
+        transition={{ duration: 0.6, repeat: active ? Infinity : 0 }}
+        className="h-20 w-auto object-contain drop-shadow-[0_6px_8px_rgba(0,0,0,0.45)] sm:h-28 md:h-36"
+      />
+    );
+  }
+  if (type === "center") {
+    return (
+      <div
+        className={`flex size-7 items-center justify-center rounded-full border-2 border-dashed bg-white/30 backdrop-blur-sm sm:size-10 md:size-12 ${
+          active ? "border-accent ring-4 ring-accent/60" : "border-white/70"
+        }`}
+      >
+        <div className="size-1.5 rounded-full bg-accent sm:size-2" />
+      </div>
+    );
+  }
+  return <Rider color={type === "rider-a" ? "a" : "b"} active={active} />;
+}
+
+function Rider({ color, active }: { color: "a" | "b"; active: boolean }) {
+  return (
+    <motion.div
+      animate={active ? { scale: 1.08 } : { scale: 1 }}
+      transition={{ type: "spring", stiffness: 260, damping: 20 }}
+      className="relative"
+    >
+      {active && <div className="absolute inset-0 -z-10 rounded-full bg-accent/50 blur-xl" aria-hidden />}
+      <img
+        src={color === "a" ? riderAImg : riderBImg}
+        alt={color === "a" ? "Команда A" : "Команда B"}
+        loading="lazy"
+        className={`h-14 w-auto object-contain drop-shadow-[0_4px_4px_rgba(0,0,0,0.45)] sm:h-20 md:h-24 ${
+          active ? "drop-shadow-[0_0_10px_rgba(255,200,80,0.85)]" : ""
+        }`}
+      />
+      <div className="absolute -bottom-1 left-1/2 h-1.5 w-8 -translate-x-1/2 rounded-full bg-black/40 blur-sm sm:h-2 sm:w-12" />
+    </motion.div>
   );
 }
 
 function Carcass() {
   return (
-    <svg viewBox="0 0 60 30" width="60" height="30">
-      <ellipse cx="30" cy="18" rx="26" ry="9" fill="#2d2d2d" />
-      <ellipse cx="30" cy="16" rx="22" ry="7" fill="#1a1a1a" />
-      <circle cx="50" cy="14" r="4" fill="#1a1a1a" />
-    </svg>
-  );
-}
-
-export default function GameField({ position }: Props) {
-  // map position -5..5 to 0%..100% (Team B left, Team A right)
-  const pct = ((position + 5) / 10) * 100;
-
-  return (
-    <div className="relative w-full rounded-2xl overflow-hidden border border-border bg-gradient-to-b from-[oklch(0.75_0.12_140)] to-[oklch(0.55_0.15_140)] shadow-inner" style={{ aspectRatio: "16/9" }}>
-      {/* goal zones */}
-      <div className="absolute inset-y-0 left-0 w-[10%] bg-[oklch(0.55_0.18_25_/_0.35)] border-r-2 border-dashed border-white/60 flex items-center justify-center">
-        <span className="rotate-[-90deg] text-white font-bold tracking-widest">TEAM B GOAL</span>
-      </div>
-      <div className="absolute inset-y-0 right-0 w-[10%] bg-[oklch(0.55_0.18_250_/_0.35)] border-l-2 border-dashed border-white/60 flex items-center justify-center">
-        <span className="rotate-90 text-white font-bold tracking-widest">TEAM A GOAL</span>
-      </div>
-      {/* center line */}
-      <div className="absolute inset-y-0 left-1/2 w-px bg-white/50" />
-      <div className="absolute left-1/2 top-2 -translate-x-1/2 text-xs text-white/80">CENTER</div>
-
-      {/* tick marks */}
-      {[-4, -3, -2, -1, 1, 2, 3, 4].map((t) => (
-        <div
-          key={t}
-          className="absolute top-1/2 -translate-y-1/2 w-px h-4 bg-white/40"
-          style={{ left: `${((t + 5) / 10) * 100}%` }}
-        />
-      ))}
-
-      {/* Team B rider (left side) */}
-      <div className="absolute bottom-[18%] left-[6%]">
-        <Rider color="oklch(0.55 0.18 25)" />
-      </div>
-      {/* Team A rider (right side) */}
-      <div className="absolute bottom-[18%] right-[6%]">
-        <Rider color="oklch(0.55 0.18 250)" flip />
-      </div>
-
-      {/* Carcass — at rider hand level */}
-      <div
-        className="absolute transition-all duration-700 ease-out"
-        style={{ left: `calc(${pct}% - 30px)`, bottom: "32%" }}
-      >
-        <Carcass />
-      </div>
-
-      {/* Position indicator */}
-      <div className="absolute bottom-2 left-1/2 -translate-x-1/2 px-3 py-1 rounded-full bg-black/40 text-white text-xs font-mono">
-        position: {position}
-      </div>
-    </div>
+    <motion.img
+      src={carcassImg}
+      alt="Улак"
+      loading="lazy"
+      animate={{ rotate: [-6, 6, -6], y: [0, -3, 0] }}
+      transition={{ duration: 1.2, repeat: Infinity, ease: "easeInOut" }}
+      className="h-9 w-auto object-contain drop-shadow-[0_4px_6px_rgba(0,0,0,0.55)] sm:h-12 md:h-14"
+    />
   );
 }
